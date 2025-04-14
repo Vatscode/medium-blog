@@ -1,16 +1,23 @@
 {
-  "name": "common",
+  "name": "medium-blog",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vatscode/medium-blog.git"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "typescript": "^5.8.2"
+  "bugs": {
+    "url": "https://github.com/Vatscode/medium-blog/issues"
   },
-  "devDependencies": {},
-  "description": ""
+  "homepage": "https://github.com/Vatscode/medium-blog#readme",
+  "description": "",
+  "dependencies": {
+    "typescript": "^5.8.3"
+  }
 }
