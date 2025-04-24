@@ -1,0 +1,10 @@
+name = "backend"
+main = "src/index.ts"
+compatibility_date = "2025-04-03"
+
+# Format: prisma://<host>/?api_key=<jwt>
+# JWT contains: header.payload.signature
+[vars]
+DATABASE_URL = "prisma://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiZjA3N2M3YTktZDY1Zi00MzViLThmODYtMmRmNjM4Y2I5NWE3IiwidGVuYW50X2lkIjoiMjcxZjViMDFhZWFlMWVjZTI0ODI2OWU5MTc4ZDQ1YWY5NmExYWMwMjUxZjZlMzk3MTJhMTQ1MDIzZThmZDNkOSIsImludGVybmFsX3NlY3JldCI6IjI5ODA3OGVhLWQ1ZmQtNDkyOC04NWVhLTEyOWRjZjExOGMxOCJ9.w55xCQfWM7xO82JGZZdZjRcTWnRi46hbW52fcS3fIu0"
+
+JWT_SECRET = "prod_jwt_secret"
