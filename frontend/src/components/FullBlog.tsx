@@ -1,5 +1,5 @@
 import { Blog } from "../hooks"
-import { Appbar } from "./AppBar.jsx"
+import { Appbar } from "./Appbar.jsx"
 import { Avatar } from "./BlogCard"
 
 export const FullBlog = ({ blog }: {blog: Blog}) => {
@@ -12,7 +12,7 @@ export const FullBlog = ({ blog }: {blog: Blog}) => {
                         {blog.title}
                     </div>
                     <div className="text-slate-500 pt-2">
-                        Post on 2nd December 2023
+                        Post on 2nd December 2024
                     </div>
                     <div className="pt-4">
                         {blog.content}
