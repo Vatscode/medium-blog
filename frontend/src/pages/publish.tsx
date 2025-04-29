@@ -1,4 +1,4 @@
-import { Appbar } from "../components/Appbar"
+import { Appbar } from "../components/AppBar"
 import axios from "axios";
 import { BACKEND_URL } from "../config.ts";
 import { useNavigate } from "react-router-dom";
