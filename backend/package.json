@@ -2,7 +2,9 @@
   "name": "backend",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify"
+    "deploy": "wrangler deploy --minify",
+    "build": "esbuild src/index.ts --bundle --outfile=dist/index.js --platform=node"
+    
   },
   "dependencies": {
     "@prisma/client": "^6.6.0",
@@ -13,6 +15,8 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250214.0",
+    "esbuild": "^0.25.3",
     "wrangler": "^4.4.0"
   }
+  
 }

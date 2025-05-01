@@ -1,6 +1,11 @@
 name = "backend"
-main = "src/index.ts"
-compatibility_date = "2025-04-03"
+main = "dist/index.js"
+compatibility_date = "2025-04-29"
+
+
+[build]
+command = "npm run build"
+
 
 # Format: prisma://<host>/?api_key=<jwt>
 # JWT contains: header.payload.signature
