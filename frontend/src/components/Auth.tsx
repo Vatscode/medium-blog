@@ -14,13 +14,25 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
 
     async function sendRequest() {
         try {
-            const response = await axios.post(`${BACKEND_URL}/api/v1/user/${type === "signup" ? "signup" : "signin"}`, postInputs);
-            const jwt = response.data;
-            localStorage.setItem("token", jwt);
+            console.log('Sending request with data:', postInputs);
+            const response = await axios.post(`${BACKEND_URL}/api/v1/user/${type === "signup" ? "signup" : "signin"}`, postInputs, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log('Response received:', response.data);
+            const { token } = response.data;
+            if (!token) {
+                throw new Error('No token received');
+            }
+            localStorage.setItem("token", token);
             navigate("/blogs");
-        } catch(e) {
-            alert("Error while signing up")
-            // alert the user here that the request failed
+        } catch(e: any) {
+            console.error('Full error object:', e);
+            console.error('Error response:', e.response);
+            console.error('Error message:', e.message);
+            const errorMessage = e.response?.data?.message || e.message || "Error while signing up";
+            alert(errorMessage);
         }
     }
     

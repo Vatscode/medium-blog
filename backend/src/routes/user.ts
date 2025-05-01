@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
 import { sign } from 'hono/jwt'
 import { signupInput, signinInput } from "@vatscode/medium-common";
+import z from "zod";
 
 export const userRouter = new Hono<{
     Bindings: {
@@ -11,75 +12,126 @@ export const userRouter = new Hono<{
     }
 }>();
 
-userRouter.post('/signup', async (c) => {
-    const body = await c.req.json();
-    const { success } = signupInput.safeParse(body);
-    if (!success) {
-        c.status(411);
-        return c.json({
-            message: "Inputs not correct"
-        })
-    }
-    const prisma = new PrismaClient({
-      datasourceUrl: c.env.DATABASE_URL,
-    }).$extends(withAccelerate())
-  
-    try {
-      const user = await prisma.user.create({
-        data: {
-          email: body.username,
-          password: body.password,
-          name: body.name
-        }
-      })
-      const jwt = await sign({
-        id: user.id
-      }, c.env.JWT_SECRET);
-  
-      return c.text(jwt)
-    } catch(e) {
-      console.log(e);
-      c.status(411);
-      return c.text('Invalid')
-    }
-  })
-  
-  
-  userRouter.post('/signin', async (c) => {
-    const body = await c.req.json();
-    const { success } = signinInput.safeParse(body);
-    if (!success) {
-        c.status(411);
-        return c.json({
-            message: "Inputs not correct"
-        })
-    }
+// Custom validation schema that matches frontend input
+const frontendSignupInput = z.object({
+    username: z.string().email(),
+    password: z.string().min(6),
+    name: z.string().optional()
+});
 
-    const prisma = new PrismaClient({
-      datasourceUrl: c.env.DATABASE_URL,
-    }).$extends(withAccelerate())
-  
+const frontendSigninInput = z.object({
+    username: z.string().email(),
+    password: z.string().min(6)
+});
+
+userRouter.post('/signup', async (c) => {
     try {
-      const user = await prisma.user.findFirst({
-        where: {
-          email: body.username,
-          password: body.password,
+        console.log("Received request at /signup");
+        const body = await c.req.json();
+        console.log("Request body:", body);
+        
+        const result = frontendSignupInput.safeParse(body);
+        console.log("Validation result:", result);
+        
+        if (!result.success) {
+            console.log("Validation error details:", result.error);
+            c.status(400);
+            return c.json({
+                message: "Invalid input format",
+                details: result.error.format()
+            });
         }
-      })
-      if (!user) {
-        c.status(403);
-        return c.json({
-          message: "Incorrect creds"
-        })
-      }
-      const jwt = await sign({
-        id: user.id
-      }, c.env.JWT_SECRET);
-  
-      return c.text(jwt)
+
+        const prisma = new PrismaClient({
+            datasourceUrl: c.env.DATABASE_URL,
+        }).$extends(withAccelerate());
+    
+        console.log("Creating user with data:", {
+            email: body.username,
+            password: body.password,
+            name: body.name
+        });
+
+        const user = await prisma.user.create({
+            data: {
+                email: body.username,
+                password: body.password,
+                name: body.name
+            }
+        });
+
+        console.log("User created successfully:", user);
+
+        const jwt = await sign({
+            id: user.id
+        }, c.env.JWT_SECRET);
+    
+        return c.json({ token: jwt });
     } catch(e) {
-      console.log(e);
-      c.status(411);
-      return c.text('Invalid')
+        console.error("Signup error details:", e);
+        c.status(400);
+        return c.json({
+            message: "Error while signing up",
+            error: e instanceof Error ? e.message : "Unknown error"
+        });
     }
-  })
+});
+
+userRouter.post('/signin', async (c) => {
+    try {
+        console.log("Received request at /signin");
+        const body = await c.req.json();
+        console.log("Request body:", body);
+        
+        const result = frontendSigninInput.safeParse(body);
+        console.log("Validation result:", result);
+        
+        if (!result.success) {
+            console.log("Validation error details:", result.error);
+            c.status(400);
+            return c.json({
+                message: "Invalid input format",
+                details: result.error.format()
+            });
+        }
+
+        const prisma = new PrismaClient({
+            datasourceUrl: c.env.DATABASE_URL,
+        }).$extends(withAccelerate());
+    
+        console.log("Looking for user with:", {
+            email: body.username,
+            password: body.password
+        });
+
+        const user = await prisma.user.findFirst({
+            where: {
+                email: body.username,
+                password: body.password,
+            }
+        });
+
+        if (!user) {
+            console.log("No user found with provided credentials");
+            c.status(401);
+            return c.json({
+                message: "Invalid credentials"
+            });
+        }
+
+        console.log("User found:", user);
+
+        const jwt = await sign({
+            id: user.id
+        }, c.env.JWT_SECRET);
+    
+        return c.json({ token: jwt });
+    } catch(e) {
+        console.error("Signin error details:", e);
+        c.status(400);
+        return c.json({
+            message: "Error while signing in",
+            error: e instanceof Error ? e.message : "Unknown error"
+        });
+    }
+});

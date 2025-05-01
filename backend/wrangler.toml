@@ -1,6 +1,6 @@
-name = "backend"
-main = "dist/index.js"
-compatibility_date = "2025-04-29"
+name = "medium-blog"
+main = "src/index.ts"
+compatibility_date = "2024-03-01"
 
 
 [build]
@@ -10,7 +10,10 @@ command = "npm run build"
 # Format: prisma://<host>/?api_key=<jwt>
 # JWT contains: header.payload.signature
 [vars]
-DATABASE_URL = "prisma://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiZjA3N2M3YTktZDY1Zi00MzViLThmODYtMmRmNjM4Y2I5NWE3IiwidGVuYW50X2lkIjoiMjcxZjViMDFhZWFlMWVjZTI0ODI2OWU5MTc4ZDQ1YWY5NmExYWMwMjUxZjZlMzk3MTJhMTQ1MDIzZThmZDNkOSIsImludGVybmFsX3NlY3JldCI6IjI5ODA3OGVhLWQ1ZmQtNDkyOC04NWVhLTEyOWRjZjExOGMxOCJ9.w55xCQfWM7xO82JGZZdZjRcTWnRi46hbW52fcS3fIu0"
+DATABASE_URL = "prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiZjM4M2ZiNWQtMTRkYS00ZTNlLTk3ZDAtMTlmMmI5Y2NhM2RhIiwidGVuYW50X2lkIjoiYjU4MTI1ZTZjMGQxOWM4Y2NmMWU1ODhjM2MwMjdhYTNkMjdhN2EzZTBhNzg1ZGIxNGQzZjg0YjJhMjllNDE0ZSIsImludGVybmFsX3NlY3JldCI6IjNkMWIwZDg2LThhMzctNDdiOS04NjY1LTc3ODc0ZWIxY2Y2YSJ9._CwfgDq-ssSa5nXrgCarxZmeIo1mZ-8h-Tw6VLOGh9k"
 
-JWT_SECRET = "prod_jwt_secret"
-route = "https://backend.vatsworks.workers.dev/*"
+JWT_SECRET = "your-secret-key-here"
+
+[[routes]]
+pattern = "https://backend.vatscode.workers.dev/*"
+zone_id = "YOUR_ZONE_ID"
