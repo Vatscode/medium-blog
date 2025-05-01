@@ -1,26 +1,36 @@
 import { ChangeEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { SignupInput } from "@vatscode/medium-common";
+import { SignupInput, SigninInput } from "@vatscode/medium-common";
 import axios from "axios";
 import { BACKEND_URL } from "../config.ts";
 
 export const Auth = ({ type }: { type: "signup" | "signin" }) => {
     const navigate = useNavigate();
-    const [postInputs, setPostInputs] = useState<SignupInput>({
-        name: "",
-        username: "",
+    const [postInputs, setPostInputs] = useState(type === "signup" ? {
+        email: "",
+        password: "",
+        name: ""
+    } : {
+        email: "",
         password: ""
     });
 
     async function sendRequest() {
         try {
-            console.log('Sending request with data:', postInputs);
-            const response = await axios.post(`${BACKEND_URL}/api/v1/user/${type === "signup" ? "signup" : "signin"}`, postInputs, {
+            const url = `${BACKEND_URL}/api/v1/user/${type === "signup" ? "signup" : "signin"}`;
+            console.log('Making request to:', url);
+            console.log('With data:', JSON.stringify(postInputs, null, 2));
+            console.log('Data types:', {
+                email: typeof postInputs.email,
+                password: typeof postInputs.password,
+                name: typeof postInputs.name
+            });
+            const response = await axios.post(url, postInputs, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
-            console.log('Response received:', response.data);
+            console.log('Response:', response.data);
             const { token } = response.data;
             if (!token) {
                 throw new Error('No token received');
@@ -29,8 +39,9 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
             navigate("/blogs");
         } catch(e: any) {
             console.error('Full error object:', e);
-            console.error('Error response:', e.response);
-            console.error('Error message:', e.message);
+            console.error('Request data that failed:', postInputs);
+            console.error('Error status:', e.response?.status);
+            console.error('Error data:', e.response?.data);
             const errorMessage = e.response?.data?.message || e.message || "Error while signing up";
             alert(errorMessage);
         }
@@ -60,7 +71,7 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
                     <LabelledInput label="Email" placeholder="vats@gmail.com" onChange={(e) => {
                         setPostInputs({
                             ...postInputs,
-                            username: e.target.value
+                            email: e.target.value
                         })
                     }} />
                     <LabelledInput label="Password" type={"password"} placeholder="123456" onChange={(e) => {

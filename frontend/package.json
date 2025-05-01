@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vatscode/medium-common": "^1.0.1",
+    "@vatscode/medium-common": "file:../common",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.5.2"
