@@ -1,7 +1,3 @@
-
-//if youre converting your data to json you have to await it
-
-
 import { Hono } from 'hono'
 import { userRouter } from './routes/user';
 import { blogRouter } from './routes/blog';
@@ -13,7 +9,15 @@ const app = new Hono<{
     JWT_SECRET: string;
   }
 }>();
+
 app.use('/*', cors())
+
+// Root route
+app.get('/', (c) => {
+  return c.json({ message: 'Welcome to the API' })
+})
+
+// Mount routers
 app.route("/api/v1/user", userRouter);
 app.route("/api/v1/blog", blogRouter);
 
