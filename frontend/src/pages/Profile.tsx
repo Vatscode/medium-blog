@@ -1,167 +1,124 @@
-import { useState, useRef, ChangeEvent } from 'react';
-import { Appbar } from "../components/AppBar";
-import axios from "axios";
-import { BACKEND_URL } from "../config";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { BACKEND_URL } from '../config';
+import { Appbar } from '../components/AppBar';
+import { Avatar } from '../components/BlogCard';
 
 export const Profile = () => {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
-    const [profileData, setProfileData] = useState({
-        name: "",
-        bio: "",
-        avatarUrl: ""
+    const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        name: localStorage.getItem('username') || '',
+        email: '',
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
     });
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleImageClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        if (file.size > 5 * 1024 * 1024) { // 5MB limit
-            setError("Image size should be less than 5MB");
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (formData.newPassword !== formData.confirmPassword) {
+            alert("New passwords don't match!");
             return;
         }
 
         try {
-            setLoading(true);
-            setError("");
+            setIsLoading(true);
+            const token = localStorage.getItem('token');
+            const authToken = token?.startsWith('Bearer ') ? token : `Bearer ${token}`;
+            const response = await axios.put(
+                `${BACKEND_URL}/api/v1/user/profile`,
+                {
+                    name: formData.name,
+                    currentPassword: formData.currentPassword,
+                    newPassword: formData.newPassword || undefined
+                },
+                {
+                    headers: {
+                        Authorization: authToken
+                    }
+                }
+            );
+
+            if (response.data.name) {
+                localStorage.setItem('username', response.data.name);
+            }
             
-            const formData = new FormData();
-            formData.append('avatar', file);
-
-            const response = await axios.post(`${BACKEND_URL}/api/v1/user/avatar`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    Authorization: localStorage.getItem("token")
-                }
-            });
-
-            setProfileData(prev => ({ ...prev, avatarUrl: response.data.avatarUrl }));
-            setSuccess("Profile picture updated successfully!");
-        } catch (err) {
-            setError("Failed to upload image. Please try again.");
-            console.error("Upload error:", err);
+            alert('Profile updated successfully!');
+            navigate('/blogs');
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Error updating profile');
         } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSubmit = async () => {
-        try {
-            setLoading(true);
-            setError("");
-
-            await axios.put(`${BACKEND_URL}/api/v1/user/profile`, {
-                name: profileData.name,
-                bio: profileData.bio
-            }, {
-                headers: {
-                    Authorization: localStorage.getItem("token")
-                }
-            });
-
-            setSuccess("Profile updated successfully!");
-        } catch (err) {
-            setError("Failed to update profile. Please try again.");
-            console.error("Update error:", err);
-        } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+        <div className="min-h-screen bg-gray-50">
             <Appbar />
-            <div className="max-w-2xl mx-auto px-4 py-8">
-                <div className="bg-white rounded-xl shadow-lg p-6 md:p-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-6">Edit Profile</h1>
+            <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-sm">
+                <div className="flex items-center gap-4 mb-8">
+                    <Avatar name={formData.name} size="big" />
+                    <h1 className="text-2xl font-bold text-gray-900">Edit Profile</h1>
+                </div>
 
-                    {error && (
-                        <div className="p-4 mb-6 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200 animate-shake" role="alert">
-                            {error}
-                        </div>
-                    )}
-
-                    {success && (
-                        <div className="p-4 mb-6 text-sm text-green-800 rounded-lg bg-green-50 border border-green-200" role="alert">
-                            {success}
-                        </div>
-                    )}
-
-                    <div className="mb-8 text-center">
-                        <div 
-                            onClick={handleImageClick}
-                            className="relative inline-block group cursor-pointer"
-                        >
-                            {profileData.avatarUrl ? (
-                                <img 
-                                    src={profileData.avatarUrl} 
-                                    alt="Profile" 
-                                    className="w-32 h-32 rounded-full object-cover border-4 border-purple-200 group-hover:border-purple-300 transition-all duration-200"
-                                />
-                            ) : (
-                                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center text-white text-4xl font-medium border-4 border-purple-200 group-hover:border-purple-300 transition-all duration-200">
-                                    {profileData.name?.[0]?.toUpperCase() || '?'}
-                                </div>
-                            )}
-                            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200">
-                                <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </div>
-                        </div>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Name</label>
                         <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleFileChange}
+                            type="text"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
+                            required
                         />
-                        <p className="text-sm text-gray-500 mt-2">Click to change profile picture</p>
                     </div>
 
-                    <div className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Display Name
-                            </label>
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">Current Password</label>
+                        <input
+                            type="password"
+                            value={formData.currentPassword}
+                            onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
+                            required
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">New Password (Optional)</label>
+                        <input
+                            type="password"
+                            value={formData.newPassword}
+                            onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
+                        />
+                    </div>
+
+                    {formData.newPassword && (
+                        <div className="space-y-1">
+                            <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
                             <input
-                                type="text"
-                                value={profileData.name}
-                                onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                placeholder="Enter your display name"
+                                type="password"
+                                value={formData.confirmPassword}
+                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
+                                required
                             />
                         </div>
+                    )}
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Bio
-                            </label>
-                            <textarea
-                                value={profileData.bio}
-                                onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
-                                rows={4}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                placeholder="Tell us about yourself..."
-                            />
-                        </div>
-
+                    <div className="flex justify-end">
                         <button
-                            onClick={handleSubmit}
-                            disabled={loading}
-                            className={`w-full px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-200 transition-all duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            type="submit"
+                            disabled={isLoading}
+                            className={`inline-flex justify-center rounded-md border border-transparent bg-gradient-to-r from-purple-600 to-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            {loading ? 'Saving...' : 'Save Changes'}
+                            {isLoading ? 'Saving...' : 'Save Changes'}
                         </button>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     );

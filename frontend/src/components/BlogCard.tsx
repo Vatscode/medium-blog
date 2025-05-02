@@ -19,9 +19,12 @@ export const Avatar = ({ name, size = "small" }: { name: string, size?: "small" 
         "bg-indigo-500", "bg-purple-500", "bg-pink-500"
     ];
     
-    // Generate consistent color based on name
-    const colorIndex = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+    // Generate consistent color based on name, default to first color if no name
+    const colorIndex = name ? name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length : 0;
     const bgColor = colors[colorIndex];
+
+    // Get the first letter safely
+    const firstLetter = name && name.length > 0 ? name[0].toUpperCase() : '?';
     
     return (
         <div className={`
@@ -29,7 +32,7 @@ export const Avatar = ({ name, size = "small" }: { name: string, size?: "small" 
             ${bgColor} rounded-full flex items-center justify-center text-white font-medium
             transform transition-transform duration-200 hover:scale-110
         `}>
-            {name[0]?.toUpperCase() || 'A'}
+            {firstLetter}
         </div>
     );
 };
@@ -50,6 +53,14 @@ export const BlogCard = ({
     const isOwner = currentUserId === authorId;
     const [isDeleting, setIsDeleting] = useState(false);
 
+    console.log('Blog ownership check:', {
+        blogId: id,
+        authorId: authorId,
+        currentUserId: currentUserId,
+        isOwner: isOwner,
+        token: token ? 'present' : 'missing'
+    });
+
     const handleDelete = async (e: React.MouseEvent) => {
         e.preventDefault(); // Prevent navigation
         if (!window.confirm("Are you sure you want to delete this blog?")) {
@@ -58,9 +69,10 @@ export const BlogCard = ({
 
         try {
             setIsDeleting(true);
+            const authToken = token?.startsWith('Bearer ') ? token : `Bearer ${token}`;
             const response = await axios.delete(`${BACKEND_URL}/api/v1/blog/delete/${id}`, {
                 headers: {
-                    Authorization: token
+                    Authorization: authToken
                 }
             });
 

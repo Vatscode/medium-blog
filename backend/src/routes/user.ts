@@ -1,15 +1,51 @@
 import { Hono } from "hono";
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
-import { sign } from 'hono/jwt'
+import { sign, verify } from 'hono/jwt'
 import { signupInput, signinInput } from "@vatscode/medium-common";
 
 export const userRouter = new Hono<{
     Bindings: {
         DATABASE_URL: string;
         JWT_SECRET: string;
+    },
+    Variables: {
+        userId: string;
     }
 }>();
+
+// Auth middleware for protected routes
+const authMiddleware = async (c: any, next: any) => {
+    const authHeader = c.req.header("authorization");
+    if (!authHeader) {
+        c.status(403);
+        return c.json({
+            message: "You're not logged in"
+        });
+    }
+
+    try {
+        // Extract token from Bearer format
+        const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+        
+        const user = await verify(token, c.env.JWT_SECRET);
+        if (user && user.id) {
+            c.set("userId", user.id);
+            await next();
+        } else {
+            c.status(403);
+            return c.json({
+                message: "Invalid token"
+            });
+        }
+    } catch(e) {
+        console.error("Auth error:", e);
+        c.status(403);
+        return c.json({
+            message: "Invalid token"
+        });
+    }
+};
 
 userRouter.post('/signup', async (c) => {     
     const body = await c.req.json();
@@ -42,7 +78,8 @@ userRouter.post('/signup', async (c) => {
   
       return c.json({
         token: jwt,
-        userId: user.id
+        userId: user.id,
+        name: user.name
       })
     } catch(e) {
       console.error('Error in signup:', e);
@@ -55,7 +92,7 @@ userRouter.post('/signup', async (c) => {
   })
   
   
-  userRouter.post('/signin', async (c) => {
+userRouter.post('/signin', async (c) => {
     const body = await c.req.json();
     console.log('Received signin request with body:', body);
     const { success } = signinInput.safeParse(body);
@@ -90,11 +127,88 @@ userRouter.post('/signup', async (c) => {
   
       return c.json({
         token: jwt,
-        userId: user.id
+        userId: user.id,
+        name: user.name
       })
     } catch(e) {
       console.log(e);
       c.status(411);
       return c.text('Invalid')
     }
-  })
+});
+
+// Protected routes with middleware
+userRouter.use("/profile", authMiddleware);
+userRouter.use("/delete", authMiddleware);
+
+userRouter.put('/profile', async (c) => {
+    const userId = c.get("userId");
+    const body = await c.req.json();
+
+    const prisma = new PrismaClient({
+        datasourceUrl: c.env.DATABASE_URL,
+    }).$extends(withAccelerate());
+
+    try {
+        // First verify the current password
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user || user.password !== body.currentPassword) {
+            c.status(403);
+            return c.json({
+                message: "Current password is incorrect"
+            });
+        }
+
+        // Update the user
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                name: body.name,
+                password: body.newPassword || user.password // Keep old password if no new one provided
+            }
+        });
+
+        return c.json({
+            message: "Profile updated successfully",
+            name: updatedUser.name
+        });
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        c.status(500);
+        return c.json({
+            message: "Failed to update profile"
+        });
+    }
+});
+
+userRouter.delete('/delete', async (c) => {
+    const userId = c.get("userId");
+    const prisma = new PrismaClient({
+        datasourceUrl: c.env.DATABASE_URL,
+    }).$extends(withAccelerate());
+
+    try {
+        // First delete all posts by the user
+        await prisma.post.deleteMany({
+            where: { authorId: userId }
+        });
+
+        // Then delete the user
+        await prisma.user.delete({
+            where: { id: userId }
+        });
+
+        return c.json({
+            message: "Account deleted successfully"
+        });
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        c.status(500);
+        return c.json({
+            message: "Failed to delete account"
+        });
+    }
+});

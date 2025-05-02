@@ -20,25 +20,56 @@ blogRouter.get('/bulk', async (c) => {
         datasourceUrl: c.env.DATABASE_URL,
     }).$extends(withAccelerate())
 
+    // Get the current user's ID from token if available
+    let currentUserId = null;
+    const authHeader = c.req.header("authorization");
+    if (authHeader) {
+        try {
+            const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+            const user = await verify(token, c.env.JWT_SECRET);
+            if (user && user.id) {
+                currentUserId = user.id;
+            }
+        } catch (e) {
+            console.error("Auth error in bulk:", e);
+        }
+    }
+
+    console.log('Current user ID from token:', currentUserId);
+
     const blogs = await prisma.post.findMany({
         where: {
             published: true
         },
-        take: 10,
-        include: {
+        select: {
+            id: true,
+            title: true,
+            content: true,
+            published: true,
+            authorId: true,
+            createdAt: true,
             user: {
                 select: {
+                    id: true,
                     name: true
                 }
             }
         },
+        take: 10,
         orderBy: {
             createdAt: 'desc'
         }
     });
 
+    console.log('Blogs with authors:', blogs.map(blog => ({
+        blogId: blog.id,
+        authorId: blog.authorId,
+        userName: blog.user.name
+    })));
+
     return c.json({
-        blogs
+        blogs,
+        currentUserId
     })
 });
 
@@ -54,7 +85,13 @@ blogRouter.get('/:id', async (c) => {
                 id: id,
                 published: true
             },
-            include: {
+            select: {
+                id: true,
+                title: true,
+                content: true,
+                published: true,
+                authorId: true,
+                createdAt: true,
                 user: {
                     select: {
                         name: true
@@ -180,32 +217,71 @@ blogRouter.put('/update', async (c) => {
 });
 
 blogRouter.post('/publish', async (c) => {
-    const body = await c.req.json();
-    const { success } = publishBlogInput.safeParse(body);
-    if (!success) {
-        c.status(411);
-        return c.json({
-            message: "Inputs not correct"
-        })
-    }
-
-    const prisma = new PrismaClient({
-      datasourceUrl: c.env.DATABASE_URL,
-    }).$extends(withAccelerate())
-
-    const blog = await prisma.post.update({
-        where: {
-            id: body.id,
-            authorId: c.get("userId")
-        },
-        data: {
-            published: true
+    try {
+        const body = await c.req.json();
+        console.log('Received publish request with body:', body);
+        
+        const result = publishBlogInput.safeParse(body);
+        if (!result.success) {
+            console.error('Validation error:', result.error);
+            c.status(400);
+            return c.json({
+                message: "Invalid request format",
+                error: result.error.issues
+            });
         }
-    });
 
-    return c.json({
-        message: "Blog published successfully"
-    });
+        const userId = c.get("userId");
+        console.log('User ID from token:', userId);
+
+        const prisma = new PrismaClient({
+            datasourceUrl: c.env.DATABASE_URL,
+        }).$extends(withAccelerate());
+
+        // First check if the blog exists and belongs to the user
+        const existingBlog = await prisma.post.findUnique({
+            where: {
+                id: body.id
+            }
+        });
+
+        console.log('Found blog:', existingBlog);
+
+        if (!existingBlog) {
+            c.status(404);
+            return c.json({
+                message: "Blog not found"
+            });
+        }
+
+        if (existingBlog.authorId !== userId) {
+            c.status(403);
+            return c.json({
+                message: "You don't have permission to publish this blog"
+            });
+        }
+
+        const blog = await prisma.post.update({
+            where: {
+                id: body.id
+            },
+            data: {
+                published: true
+            }
+        });
+
+        console.log('Successfully published blog:', blog);
+        return c.json({
+            message: "Blog published successfully",
+            blog
+        });
+    } catch (error) {
+        console.error('Error publishing blog:', error);
+        c.status(500);
+        return c.json({
+            message: "Failed to publish blog. Please try again."
+        });
+    }
 });
 
 blogRouter.delete('/delete/:id', async (c) => {

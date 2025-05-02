@@ -23,7 +23,21 @@ export const useBlog = ({ id }: { id: string }) => {
         setLoading(true);
         setError(undefined);
         
-        axios.get(`${BACKEND_URL}/api/v1/blog/${id}`)
+        const token = localStorage.getItem("token");
+        if (!token) {
+            setError("Please sign in to view this blog");
+            setLoading(false);
+            return;
+        }
+        
+        // Ensure token has Bearer prefix
+        const authToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+        
+        axios.get(`${BACKEND_URL}/api/v1/blog/${id}`, {
+            headers: {
+                Authorization: authToken
+            }
+        })
             .then(response => {
                 setBlog(response.data.blog);
             })
@@ -47,14 +61,35 @@ export const useBlogs = () => {
     const [loading, setLoading] = useState(true);
     const [blogs, setBlogs] = useState<Blog[]>([]);
     const [error, setError] = useState<string>();
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     useEffect(() => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            setLoading(false);
+            setBlogs([]);
+            return;
+        }
+
+        // Ensure token has Bearer prefix
+        const authToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+
         setLoading(true);
         setError(undefined);
 
-        axios.get(`${BACKEND_URL}/api/v1/blog/bulk`)
+        axios.get(`${BACKEND_URL}/api/v1/blog/bulk`, {
+            headers: {
+                Authorization: authToken
+            }
+        })
             .then(response => {
+                console.log('Response from bulk:', response.data);
                 setBlogs(response.data.blogs);
+                setCurrentUserId(response.data.currentUserId);
+                // Store the current user ID in localStorage
+                if (response.data.currentUserId) {
+                    localStorage.setItem("userId", response.data.currentUserId);
+                }
             })
             .catch(err => {
                 console.error("Error fetching blogs:", err);
@@ -68,6 +103,7 @@ export const useBlogs = () => {
     return {
         loading,
         blogs,
-        error
+        error,
+        currentUserId
     }
 }

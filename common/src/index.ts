@@ -29,8 +29,7 @@ export const updateBlogInput = z.object({
 export type UpdateBlogInput = z.infer<typeof updateBlogInput>
 
 export const publishBlogInput = z.object({
-    id: z.string(),
-    published: z.boolean()
+    id: z.string()
 })
 export type PublishBlogInput = z.infer<typeof publishBlogInput>
 

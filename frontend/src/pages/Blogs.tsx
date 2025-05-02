@@ -2,13 +2,15 @@ import { useBlogs } from "../hooks"
 import { Appbar } from "../components/AppBar"
 import { BlogCard } from "../components/BlogCard"
 import { Spinner } from "../components/Spinner"
-import { Link } from "react-router-dom"
+import { Link, Navigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import axios from "axios"
 import { BACKEND_URL } from "../config"
 
 export const Blogs = () => {
-    const isLoggedIn = localStorage.getItem("token") !== null;
+    const token = localStorage.getItem("token");
+    const isLoggedIn = token !== null;
+
     const { loading, blogs, error } = useBlogs();
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [title, setTitle] = useState("");
@@ -32,47 +34,94 @@ export const Blogs = () => {
                 return;
             }
 
-            const token = localStorage.getItem("token");
             if (!token) {
                 setPublishError("Please sign in to publish a blog");
                 return;
             }
 
-            console.log('Creating blog with token:', token);
+            const authToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+            console.log('Starting blog creation process...');
+            console.log('Using token:', authToken);
             
             try {
-                const response = await axios.post(`${BACKEND_URL}/api/v1/blog/create`, {
-                    title,
-                    content
+                // First create the blog
+                console.log('Making create request to:', `${BACKEND_URL}/api/v1/blog/create`);
+                const createResponse = await axios.post(`${BACKEND_URL}/api/v1/blog/create`, {
+                    title: title.trim(),
+                    content: content.trim()
                 }, {
                     headers: {
-                        Authorization: token
+                        Authorization: authToken,
+                        'Content-Type': 'application/json'
                     }
                 });
                 
-                console.log('Blog created:', response.data);
+                console.log('Blog created successfully:', createResponse.data);
 
-                // Publish the blog immediately
+                if (!createResponse.data.id) {
+                    throw new Error('No blog ID received from create');
+                }
+
+                // Then publish it
+                console.log('Making publish request to:', `${BACKEND_URL}/api/v1/blog/publish`);
+                console.log('With blog ID:', createResponse.data.id);
+                
+                // Add a small delay to ensure the blog is created in the database
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
                 const publishResponse = await axios.post(`${BACKEND_URL}/api/v1/blog/publish`, {
-                    id: response.data.id
+                    id: createResponse.data.id,
+                    published: true
                 }, {
                     headers: {
-                        Authorization: token
+                        Authorization: authToken,
+                        'Content-Type': 'application/json'
                     }
                 });
 
-                console.log('Blog published:', publishResponse.data);
+                console.log('Blog published successfully:', publishResponse.data);
+
+                // Show success message
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
+                notification.textContent = 'Blog published successfully!';
+                document.body.appendChild(notification);
+                
+                // Remove notification after 3 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
 
                 // Reset form and refresh page to show new blog
                 setTitle("");
                 setContent("");
                 setShowCreateForm(false);
-                window.location.reload();
+                
+                // Add a small delay before reloading to ensure the blog is published
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } catch (err: any) {
-                console.error('Full error object:', err);
-                console.error('Error response:', err.response?.data);
-                console.error('Error status:', err.response?.status);
-                setPublishError(err.response?.data?.message || "Failed to publish blog. Please try again.");
+                console.error('Error details:', {
+                    message: err.message,
+                    status: err.response?.status,
+                    statusText: err.response?.statusText,
+                    data: err.response?.data,
+                    url: err.config?.url
+                });
+                const errorMessage = err.response?.data?.message || "Failed to publish blog. Please try again.";
+                setPublishError(errorMessage);
+
+                // Show error notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
+                notification.textContent = errorMessage;
+                document.body.appendChild(notification);
+                
+                // Remove notification after 3 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
             }
         } finally {
             setPublishing(false);
@@ -101,24 +150,19 @@ export const Blogs = () => {
                         </h1>
                         <p className="text-gray-600">Discover amazing stories from our writers</p>
                     </div>
-                    {isLoggedIn ? (
-                        <button 
-                            onClick={() => setShowCreateForm(true)}
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-200 transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5"
-                        >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                            </svg>
-                            Write a Story
-                        </button>
-                    ) : (
-                        <Link 
-                            to="/signup"
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-200 transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5"
-                        >
-                            Get Started
-                        </Link>
-                    )}
+                    <div className="flex gap-4">
+                        {isLoggedIn ? (
+                            <button 
+                                onClick={() => setShowCreateForm(true)}
+                                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-200 transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                            >
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Write a Story
+                            </button>
+                        ) : null}
+                    </div>
                 </div>
 
                 {/* Blog Creation Form */}
@@ -184,23 +228,51 @@ export const Blogs = () => {
 
                 {blogs.length === 0 ? (
                     <div className="text-center py-12 animate-fade-in">
-                        <div className="text-6xl mb-4">📝</div>
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">No stories yet</h3>
-                        <p className="text-gray-600 mb-6">Be the first one to share your story!</p>
+                        <div className="text-6xl mb-4">✨</div>
                         {isLoggedIn ? (
-                            <button 
-                                onClick={() => setShowCreateForm(true)}
-                                className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-200 transition-all duration-200 shadow-md hover:shadow-lg"
-                            >
-                                Write a Story
-                            </button>
+                            <>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">No stories yet</h3>
+                                <p className="text-gray-600 mb-6">Be the first one to share your story!</p>
+                                <button 
+                                    onClick={() => setShowCreateForm(true)}
+                                    className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-200 transition-all duration-200 shadow-md hover:shadow-lg"
+                                >
+                                    Write a Story
+                                </button>
+                            </>
                         ) : (
-                            <Link 
-                                to="/signup"
-                                className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-200 transition-all duration-200 shadow-md hover:shadow-lg"
-                            >
-                                Get Started
-                            </Link>
+                            <>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-4">Join Our Writing Community!</h3>
+                                <div className="max-w-2xl mx-auto">
+                                    <p className="text-lg text-gray-600 mb-6">
+                                        Discover thought-provoking stories, share your expertise, and connect with readers worldwide. 
+                                        Join thousands of writers who are already sharing their knowledge and experiences.
+                                    </p>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                        <div className="p-4 bg-white rounded-lg shadow-sm">
+                                            <div className="text-3xl mb-2">🚀</div>
+                                            <h4 className="font-semibold text-gray-900 mb-1">Share Your Voice</h4>
+                                            <p className="text-sm text-gray-600">Write and publish your stories with our elegant editor</p>
+                                        </div>
+                                        <div className="p-4 bg-white rounded-lg shadow-sm">
+                                            <div className="text-3xl mb-2">🌟</div>
+                                            <h4 className="font-semibold text-gray-900 mb-1">Build Your Audience</h4>
+                                            <p className="text-sm text-gray-600">Connect with readers who value your perspective</p>
+                                        </div>
+                                        <div className="p-4 bg-white rounded-lg shadow-sm">
+                                            <div className="text-3xl mb-2">💡</div>
+                                            <h4 className="font-semibold text-gray-900 mb-1">Inspire Others</h4>
+                                            <p className="text-sm text-gray-600">Make an impact with your knowledge and experiences</p>
+                                        </div>
+                                    </div>
+                                    <Link 
+                                        to="/signup"
+                                        className="inline-flex items-center px-8 py-4 text-lg font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-200 transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                                    >
+                                        Get Started Today
+                                    </Link>
+                                </div>
+                            </>
                         )}
                     </div>
                 ) : (

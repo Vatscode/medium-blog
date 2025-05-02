@@ -1,9 +1,16 @@
 import { Link, useNavigate } from "react-router-dom"
 import { Avatar } from "./BlogCard"
+import { ProfileDropdown } from "./ProfileDropdown"
+import { useState } from "react"
 
 export const Appbar = () => {
+    const token = localStorage.getItem("token");
     const username = localStorage.getItem("username");
     const navigate = useNavigate();
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+    // Get the first letter of the username
+    const userInitial = username ? username[0].toUpperCase() : '';
 
     return (
         <div className="border-b flex justify-between px-10 py-4 items-center bg-white">
@@ -13,7 +20,7 @@ export const Appbar = () => {
                 </div>
             </Link>
             <div className="flex gap-4 items-center">
-                {username ? (
+                {token ? (
                     <>
                         <button 
                             onClick={() => {
@@ -28,8 +35,19 @@ export const Appbar = () => {
                             Write a Story
                         </button>
                         <div className="flex items-center gap-2">
-                            <Avatar size="small" name={username} />
-                            <span className="text-sm font-medium text-gray-700">{username}</span>
+                            <div className="relative inline-block text-left">
+                                <button 
+                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                    className="flex items-center gap-2 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-all duration-200"
+                                >
+                                    <Avatar size="small" name={userInitial} />
+                                    {username && <span className="text-sm font-medium text-gray-700">{username}</span>}
+                                </button>
+                                <ProfileDropdown 
+                                    isOpen={isDropdownOpen} 
+                                    onClose={() => setIsDropdownOpen(false)} 
+                                />
+                            </div>
                         </div>
                     </>
                 ) : (

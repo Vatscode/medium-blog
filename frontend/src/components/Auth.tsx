@@ -31,13 +31,18 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
                 }
             });
             console.log('Response:', response.data);
-            const { token, userId } = response.data;
+            const { token, userId, name } = response.data;
             if (!token) {
                 throw new Error('No token received');
             }
-            localStorage.setItem("token", token);
+            localStorage.setItem("token", `Bearer ${token}`);
             localStorage.setItem("userId", userId);
-            navigate("/");
+            if (name) {
+                localStorage.setItem("username", name);
+            }
+            console.log('Stored userId:', userId);
+            console.log('Current localStorage userId:', localStorage.getItem("userId"));
+            navigate("/blogs");
         } catch(e: any) {
             console.error('Full error object:', e);
             console.error('Request data that failed:', postInputs);

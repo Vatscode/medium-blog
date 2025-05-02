@@ -8,20 +8,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model post {
+model Post {
   id        String   @id
   title     String
   content   String
   published Boolean  @default(false)
   authorId  String
   createdAt DateTime @default(now())
-  user      user     @relation(fields: [authorId], references: [id])
+  user      User     @relation(fields: [authorId], references: [id])
 }
 
-model user {
+model User {
   id       String  @id
   email    String  @unique
   name     String?
   password String
-  posts    post[]
+  posts    Post[]
 }
