@@ -1,0 +1,97 @@
+import { useQuery } from "@tanstack/react-query";
+
+export interface Blog {
+    id: string;
+    title: string;
+    content: string;
+    published: boolean;
+    authorId: string;
+    createdAt: string;
+    user: {
+        id: string;
+        name: string;
+    };
+}
+
+export interface BlogsResponse {
+    blogs: Blog[];
+    currentUserId: string | null;
+    isAdmin: boolean;
+}
+
+export interface SigninResponse {
+    token: string;
+    userId: string;
+    name: string;
+    isAdmin: boolean;
+}
+
+export interface User {
+    id: string;
+    name: string | null;
+    email: string;
+}
+
+interface BlogResponse {
+    blog: Blog;
+}
+
+interface BlogsHookReturn {
+    blogs: Blog[];
+    currentUserId: string | null;
+    isAdmin: boolean;
+    loading: boolean;
+    error: Error | undefined;
+}
+
+export const useBlogs = (): BlogsHookReturn => {
+    const { data, isLoading, error } = useQuery<BlogsResponse>({
+        queryKey: ['blogs'],
+        queryFn: async () => {
+            const token = localStorage.getItem('token');
+            const headers: HeadersInit = {};
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+            
+            const response = await fetch('https://medium-blog.vatsworks.workers.dev/api/v1/blog/bulk', {
+                headers
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch blogs');
+            }
+            return response.json();
+        }
+    });
+
+    return {
+        blogs: data?.blogs || [],
+        currentUserId: data?.currentUserId || null,
+        isAdmin: data?.isAdmin || false,
+        loading: isLoading,
+        error: error as Error | undefined
+    };
+};
+
+export const useBlog = (id: string) => {
+    return useQuery<BlogResponse>({
+        queryKey: ['blog', id],
+        queryFn: async () => {
+            const token = localStorage.getItem('token');
+            const headers: HeadersInit = {};
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+            
+            const response = await fetch(`https://medium-blog.vatsworks.workers.dev/api/v1/blog/${id}`, {
+                headers
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch blog');
+            }
+            
+            return response.json();
+        }
+    });
+}; 

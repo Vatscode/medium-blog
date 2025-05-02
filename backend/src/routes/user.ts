@@ -64,12 +64,16 @@ userRouter.post('/signup', async (c) => {
     }).$extends(withAccelerate())
   
     try {
+      // Make the account admin if it's your email
+      const isAdmin = body.email === 'vatscode@gmail.com';
+      
       const user = await prisma.user.create({
         data: {
           id: crypto.randomUUID(),
           email: body.email,
           password: body.password,
-          name: body.name
+          name: body.name,
+          isAdmin: isAdmin
         }
       })
       const jwt = await sign({
@@ -79,7 +83,8 @@ userRouter.post('/signup', async (c) => {
       return c.json({
         token: jwt,
         userId: user.id,
-        name: user.name
+        name: user.name,
+        isAdmin: user.isAdmin
       })
     } catch(e) {
       console.error('Error in signup:', e);
@@ -113,6 +118,11 @@ userRouter.post('/signin', async (c) => {
         where: {
           email: body.email,
           password: body.password,
+        },
+        select: {
+          id: true,
+          name: true,
+          isAdmin: true
         }
       })
       if (!user) {
@@ -128,7 +138,8 @@ userRouter.post('/signin', async (c) => {
       return c.json({
         token: jwt,
         userId: user.id,
-        name: user.name
+        name: user.name,
+        isAdmin: user.isAdmin
       })
     } catch(e) {
       console.log(e);

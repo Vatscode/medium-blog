@@ -4,6 +4,10 @@ import { withAccelerate } from "@prisma/extension-accelerate";
 import { Hono } from "hono";
 import { verify } from "hono/jwt";
 
+interface JwtPayload {
+    id: string;
+}
+
 export const blogRouter = new Hono<{
     Bindings: {
         DATABASE_URL: string;
@@ -20,16 +24,24 @@ blogRouter.get('/bulk', async (c) => {
         datasourceUrl: c.env.DATABASE_URL,
     }).$extends(withAccelerate())
 
-    // Get the current user's ID from token if available
+    // Get the current user's ID and admin status from token if available
     let currentUserId = null;
+    let isAdmin = false;
     const authHeader = c.req.header("authorization");
     if (authHeader) {
         try {
             const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
-            const user = await verify(token, c.env.JWT_SECRET);
-            if (user && user.id) {
-                currentUserId = user.id;
-            }
+            const payload = await verify(token, c.env.JWT_SECRET) as { id: string };
+            currentUserId = payload.id;
+            
+            // Get admin status
+            const dbUser = await prisma.user.findUnique({
+                where: { id: payload.id },
+                select: {
+                    isAdmin: true
+                }
+            });
+            isAdmin = Boolean(dbUser?.isAdmin);
         } catch (e) {
             console.error("Auth error in bulk:", e);
         }
@@ -69,7 +81,8 @@ blogRouter.get('/bulk', async (c) => {
 
     return c.json({
         blogs,
-        currentUserId
+        currentUserId,
+        isAdmin
     })
 });
 
@@ -285,36 +298,52 @@ blogRouter.post('/publish', async (c) => {
 });
 
 blogRouter.delete('/delete/:id', async (c) => {
-    const id = c.req.param("id");
+    const blogId = c.req.param("id");
     const userId = c.get("userId");
     
     const prisma = new PrismaClient({
-      datasourceUrl: c.env.DATABASE_URL,
-    }).$extends(withAccelerate())
+        datasourceUrl: c.env.DATABASE_URL,
+    }).$extends(withAccelerate());
 
-    // First check if the user owns this blog
-    const post = await prisma.post.findFirst({
-        where: {
-            id: id,
-            authorId: userId
+    try {
+        // First check if user is admin
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { isAdmin: true }
+        });
+
+        // Get the blog post
+        const blog = await prisma.post.findUnique({
+            where: { id: blogId }
+        });
+
+        if (!blog) {
+            c.status(404);
+            return c.json({
+                message: "Blog not found"
+            });
         }
-    });
 
-    if (!post) {
-        c.status(403);
+        // Allow deletion if user is admin or is the author
+        if (!user?.isAdmin && blog.authorId !== userId) {
+            c.status(403);
+            return c.json({
+                message: "Not authorized to delete this blog"
+            });
+        }
+
+        await prisma.post.delete({
+            where: { id: blogId }
+        });
+
         return c.json({
-            message: "Not authorized to delete this post"
+            message: "Blog deleted successfully"
+        });
+    } catch (error) {
+        console.error('Error deleting blog:', error);
+        c.status(500);
+        return c.json({
+            message: "Error deleting blog"
         });
     }
-
-    // Delete the blog
-    await prisma.post.delete({
-        where: {
-            id: id
-        }
-    });
-
-    return c.json({
-        message: "Blog deleted successfully"
-    });
 });
