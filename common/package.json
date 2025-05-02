@@ -1,8 +1,7 @@
 {
   "name": "@vatscode/medium-common",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "main": "dist/index.js",
-
   "files": [
     "dist"
   ],

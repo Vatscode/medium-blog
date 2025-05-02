@@ -31,12 +31,13 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
                 }
             });
             console.log('Response:', response.data);
-            const { token } = response.data;
+            const { token, userId } = response.data;
             if (!token) {
                 throw new Error('No token received');
             }
             localStorage.setItem("token", token);
-            navigate("/blogs");
+            localStorage.setItem("userId", userId);
+            navigate("/");
         } catch(e: any) {
             console.error('Full error object:', e);
             console.error('Request data that failed:', postInputs);
