@@ -48,7 +48,6 @@ export const Blogs = () => {
                     key={blog.id} 
                     blog={blog} 
                     currentUserId={data.currentUserId}
-                    isAdmin={data.isAdmin}
                 />
             ))}
         </div>

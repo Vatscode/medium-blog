@@ -3,13 +3,15 @@ import { FullBlog } from "../components/FullBlog";
 import { useParams } from "react-router-dom";
 import { useBlog } from "../hooks";
 import { Spinner } from "../components/Spinner";
+import { useQueryClient } from "@tanstack/react-query";
 
 // atomFamilies/selectorFamilies
 export const Blog = () => {
     const { id } = useParams();
-    const { loading, blog, error } = useBlog({ id: id || "" });
+    const { data, isLoading, error } = useBlog(id || "");
+    const queryClient = useQueryClient();
 
-    if (loading) {
+    if (isLoading) {
         return <div>
             <Appbar />
             <div className="h-screen flex flex-col justify-center">
@@ -26,14 +28,14 @@ export const Blog = () => {
             <div className="flex justify-center w-full pt-8">
                 <div className="max-w-screen-lg w-full">
                     <div className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50" role="alert">
-                        {error}
+                        {error instanceof Error ? error.message : 'An error occurred while loading the blog'}
                     </div>
                 </div>
             </div>
         </div>
     }
 
-    if (!blog) {
+    if (!data?.blog) {
         return <div>
             <Appbar />
             <div className="flex justify-center w-full pt-8">
@@ -48,6 +50,6 @@ export const Blog = () => {
 
     return <div>
         <Appbar />
-        <FullBlog blog={blog} />
+        <FullBlog blog={data.blog} />
     </div>
 }

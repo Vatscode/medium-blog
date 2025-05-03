@@ -8,6 +8,14 @@ interface JwtPayload {
     id: string;
 }
 
+interface User {
+    id: string;
+    name: string | null;
+    email: string;
+    password: string;
+    isAdmin: boolean;
+}
+
 export const blogRouter = new Hono<{
     Bindings: {
         DATABASE_URL: string;
@@ -145,16 +153,12 @@ const authMiddleware = async (c: any, next: any) => {
         // Extract token from Bearer format
         const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
         
-        const user = await verify(token, c.env.JWT_SECRET);
-        if (user && user.id) {
-            c.set("userId", user.id);
-            await next();
-        } else {
-            c.status(403);
-            return c.json({
-                message: "Invalid token"
-            });
-        }
+        const decoded = await verify(token, c.env.JWT_SECRET);
+        const payload = { id: (decoded as any).id } as JwtPayload;
+        const userId = payload.id;
+        
+        c.set("userId", userId);
+        await next();
     } catch(e) {
         console.error("Auth error:", e);
         c.status(403);
@@ -297,53 +301,86 @@ blogRouter.post('/publish', async (c) => {
     }
 });
 
-blogRouter.delete('/delete/:id', async (c) => {
+// Delete route
+blogRouter.delete('/:id', async (c) => {
     const blogId = c.req.param("id");
-    const userId = c.get("userId");
     
-    const prisma = new PrismaClient({
-        datasourceUrl: c.env.DATABASE_URL,
-    }).$extends(withAccelerate());
+    // Handle auth directly
+    const authHeader = c.req.header("authorization");
+    if (!authHeader) {
+        c.status(403);
+        return c.json({
+            message: "No authorization header"
+        });
+    }
 
     try {
-        // First check if user is admin
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { isAdmin: true }
-        });
+        // Extract token and verify
+        const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+        const decoded = await verify(token, c.env.JWT_SECRET);
+        const payload = { id: (decoded as any).id } as JwtPayload;
+        const userId = payload.id;
+        
+        console.log('Delete request:', { blogId, userId });
+        
+        const prisma = new PrismaClient({
+            datasourceUrl: c.env.DATABASE_URL,
+        }).$extends(withAccelerate());
 
-        // Get the blog post
-        const blog = await prisma.post.findUnique({
-            where: { id: blogId }
-        });
+        try {
+            // Check if user exists and is admin
+            const user = await prisma.user.findUnique({
+                where: { id: userId }
+            }) as User | null;
 
-        if (!blog) {
-            c.status(404);
-            return c.json({
-                message: "Blog not found"
+            if (!user) {
+                c.status(403);
+                return c.json({
+                    message: "User not found"
+                });
+            }
+
+            console.log('User check:', { userId, isAdmin: user.isAdmin });
+
+            // Get the blog post
+            const blog = await prisma.post.findUnique({
+                where: { id: blogId }
             });
-        }
 
-        // Allow deletion if user is admin or is the author
-        if (!user?.isAdmin && blog.authorId !== userId) {
-            c.status(403);
-            return c.json({
-                message: "Not authorized to delete this blog"
+            console.log('Blog check:', blog);
+
+            if (!blog) {
+                c.status(404);
+                return c.json({
+                    message: "Blog not found"
+                });
+            }
+
+            // Allow deletion if user is admin or is the author
+            if (!user.isAdmin && blog.authorId !== userId) {
+                c.status(403);
+                return c.json({
+                    message: "Not authorized to delete this blog"
+                });
+            }
+
+            const deletedBlog = await prisma.post.delete({
+                where: { id: blogId }
             });
+
+            console.log('Blog deleted successfully:', deletedBlog);
+            return c.json({
+                message: "Blog deleted successfully"
+            });
+        } finally {
+            await prisma.$disconnect();
         }
-
-        await prisma.post.delete({
-            where: { id: blogId }
-        });
-
-        return c.json({
-            message: "Blog deleted successfully"
-        });
     } catch (error) {
-        console.error('Error deleting blog:', error);
+        console.error('Error in delete endpoint:', error);
         c.status(500);
         return c.json({
-            message: "Error deleting blog"
+            message: "Error deleting blog",
+            error: error instanceof Error ? error.message : 'Unknown error'
         });
     }
 });

@@ -3,11 +3,11 @@ import { Blog } from "../hooks";
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
+import { BACKEND_URL } from "../config";
 
 interface BlogCardProps {
     blog: Blog;
     currentUserId: string | null;
-    isAdmin: boolean;
 }
 
 export const Avatar = ({ name, size = "small" }: { name: string, size?: "small" | "big" }) => {
@@ -31,10 +31,9 @@ export const Avatar = ({ name, size = "small" }: { name: string, size?: "small" 
     );
 };
 
-export const BlogCard = ({ blog, currentUserId, isAdmin }: BlogCardProps) => {
+export const BlogCard = ({ blog, currentUserId }: BlogCardProps) => {
     const queryClient = useQueryClient();
     const isOwner = currentUserId === blog.authorId;
-    const canDelete = isOwner || isAdmin;
 
     const handleDelete = async () => {
         try {
@@ -44,23 +43,33 @@ export const BlogCard = ({ blog, currentUserId, isAdmin }: BlogCardProps) => {
                 return;
             }
 
-            const response = await fetch(`https://medium-blog.vatsworks.workers.dev/api/v1/blog/delete/${blog.id}`, {
+            // First confirm with the user
+            if (!window.confirm('Are you sure you want to delete this blog?')) {
+                return;
+            }
+
+            const authToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+            
+            const response = await fetch(`${BACKEND_URL}/api/v1/blog/${blog.id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': authToken
                 }
             });
 
+            const data = await response.json();
+            
             if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.message || 'Failed to delete blog');
+                console.error('Error response:', { status: response.status, data });
+                throw new Error(data.message || `Failed to delete blog (${response.status})`);
             }
 
             await queryClient.invalidateQueries({ queryKey: ['blogs'] });
-            toast.success('Blog deleted successfully');
+            toast.success(data.message || 'Blog deleted successfully');
         } catch (error) {
-            console.error('Error deleting blog:', error);
-            toast.error(error instanceof Error ? error.message : 'Failed to delete blog');
+            console.error('Error in handleDelete:', error);
+            const message = error instanceof Error ? error.message : 'Failed to delete blog';
+            toast.error(message);
         }
     };
 
@@ -71,11 +80,13 @@ export const BlogCard = ({ blog, currentUserId, isAdmin }: BlogCardProps) => {
                     <Link to={`/blog/${blog.id}`} className="text-xl font-semibold hover:text-blue-600 transition-colors">
                         {blog.title}
                     </Link>
-                    <div className="text-sm text-gray-600 mt-1">
-                        By {blog.user.name} • {new Date(blog.createdAt).toLocaleDateString()}
+                    <div className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                        <span>By {blog.user.name}</span>
+                        <span>•</span>
+                        <span>{new Date(blog.createdAt).toLocaleDateString()}</span>
                     </div>
                 </div>
-                {canDelete && (
+                {isOwner && (
                     <button
                         onClick={handleDelete}
                         className="text-red-500 hover:text-red-700 transition-colors"

@@ -49,18 +49,29 @@ export const useBlogs = (): BlogsHookReturn => {
         queryKey: ['blogs'],
         queryFn: async () => {
             const token = localStorage.getItem('token');
-            const headers: HeadersInit = {};
+            console.log('Token from localStorage:', token);
+
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json'
+            };
+
             if (token) {
-                headers.Authorization = `Bearer ${token}`;
+                const authToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+                headers.Authorization = authToken;
+                console.log('Using Authorization header:', headers.Authorization);
             }
             
             const response = await fetch('https://medium-blog.vatsworks.workers.dev/api/v1/blog/bulk', {
                 headers
             });
+
             if (!response.ok) {
                 throw new Error('Failed to fetch blogs');
             }
-            return response.json();
+
+            const responseData = await response.json();
+            console.log('API Response:', responseData);
+            return responseData;
         }
     });
 

@@ -1,5 +1,5 @@
 import { Blog } from "../hooks"
-import { Appbar } from "./AppBar.jsx"
+import { Appbar } from "./AppBar"
 import { Avatar } from "./BlogCard"
 
 export const FullBlog = ({ blog }: {blog: Blog}) => {
@@ -12,12 +12,12 @@ export const FullBlog = ({ blog }: {blog: Blog}) => {
                         <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900 leading-tight">
                             {blog.title}
                         </h1>
-                        <div className="text-gray-500 pt-3 text-sm md:text-base">
-                            Posted on {new Date(blog.createdAt).toLocaleDateString('en-US', {
+                        <div className="flex items-center gap-2 text-gray-500 pt-3 text-sm md:text-base">
+                            <span>Posted on {new Date(blog.createdAt).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric'
-                            })}
+                            })}</span>
                         </div>
                         <div className="prose prose-lg max-w-none pt-6 text-gray-700 whitespace-pre-wrap">
                             {blog.content}

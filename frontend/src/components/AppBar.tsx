@@ -28,7 +28,7 @@ export const Appbar = () => {
     const handleSignOut = () => {
         localStorage.clear();
         setIsDropdownOpen(false);
-        navigate('/');
+        navigate('/signup');
     };
 
     const handleDeleteAccount = async () => {

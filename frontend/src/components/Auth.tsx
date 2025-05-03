@@ -20,35 +20,43 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
             const url = `${BACKEND_URL}/api/v1/user/${type === "signup" ? "signup" : "signin"}`;
             console.log('Making request to:', url);
             console.log('With data:', JSON.stringify(postInputs, null, 2));
-            console.log('Data types:', {
-                email: typeof postInputs.email,
-                password: typeof postInputs.password,
-                name: typeof postInputs.name
-            });
+            
             const response = await axios.post(url, postInputs, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
-            console.log('Response:', response.data);
-            const { token, userId, name } = response.data;
+            
+            console.log('Signin/Signup successful. Response:', response.data);
+            const { token, userId, name, isAdmin } = response.data;
+            
             if (!token) {
                 throw new Error('No token received');
             }
+            
+            // Store auth data with Bearer prefix
             localStorage.setItem("token", `Bearer ${token}`);
             localStorage.setItem("userId", userId);
-            if (name) {
-                localStorage.setItem("username", name);
-            }
-            console.log('Stored userId:', userId);
-            console.log('Current localStorage userId:', localStorage.getItem("userId"));
-            navigate("/blogs");
+            localStorage.setItem("username", name || '');
+            localStorage.setItem("isAdmin", isAdmin.toString());
+            
+            console.log('Auth data stored. Redirecting to /blogs...');
+            console.log('Current localStorage state:', {
+                token: localStorage.getItem("token"),
+                userId: localStorage.getItem("userId"),
+                username: localStorage.getItem("username"),
+                isAdmin: localStorage.getItem("isAdmin")
+            });
+            
+            // Force a page reload to ensure all components recognize the auth state
+            window.location.href = '/blogs';
+            
         } catch(e: any) {
-            console.error('Full error object:', e);
+            console.error('Authentication error:', e);
             console.error('Request data that failed:', postInputs);
             console.error('Error status:', e.response?.status);
             console.error('Error data:', e.response?.data);
-            const errorMessage = e.response?.data?.message || e.message || "Error while signing up";
+            const errorMessage = e.response?.data?.message || e.message || `Error while ${type === "signup" ? "signing up" : "signing in"}`;
             alert(errorMessage);
         }
     }
@@ -58,7 +66,7 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
             <div>
                 <div className="px-10">
                     <div className="text-3xl font-extrabold">
-                        Create an account
+                        {type === "signup" ? "Create an account" : "Welcome back"}
                     </div>
                     <div className="text-slate-500">
                         {type === "signin" ? "Don't have an account?" : "Already have an account?" }

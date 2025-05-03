@@ -182,14 +182,30 @@ export const Blogs = () => {
 
                 {/* Blog List */}
                 <div className="space-y-6">
-                    {blogs.map(blog => (
-                        <BlogCard 
-                            key={blog.id} 
-                            blog={blog}
-                            currentUserId={currentUserId}
-                            isAdmin={isAdmin}
-                        />
-                    ))}
+                    {blogs.length === 0 ? (
+                        <div className="text-center py-12">
+                            <h3 className="text-xl text-gray-600 dark:text-gray-400 mb-4">No stories yet!</h3>
+                            <p className="text-gray-500 dark:text-gray-500 mb-6">Be the first one to share your story</p>
+                            <button 
+                                onClick={() => setShowCreateForm(true)}
+                                className="inline-flex items-center px-6 py-3 text-base font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-200 transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                            >
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Write Your First Story
+                            </button>
+                        </div>
+                    ) : (
+                        blogs.map(blog => (
+                            <BlogCard 
+                                key={blog.id} 
+                                blog={blog}
+                                currentUserId={currentUserId}
+                                isAdmin={isAdmin}
+                            />
+                        ))
+                    )}
                 </div>
             </div>
         </div>
