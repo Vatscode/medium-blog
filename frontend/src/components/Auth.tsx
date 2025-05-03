@@ -1,11 +1,9 @@
 import { ChangeEvent, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { SignupInput, SigninInput } from "@vatscode/medium-common";
+import { Link } from "react-router-dom";
 import axios from "axios";
-import { BACKEND_URL } from "../config.ts";
+import { BACKEND_URL } from "../config";
 
 export const Auth = ({ type }: { type: "signup" | "signin" }) => {
-    const navigate = useNavigate();
     const [postInputs, setPostInputs] = useState(type === "signup" ? {
         email: "",
         password: "",

@@ -3,13 +3,10 @@ import { FullBlog } from "../components/FullBlog";
 import { useParams } from "react-router-dom";
 import { useBlog } from "../hooks";
 import { Spinner } from "../components/Spinner";
-import { useQueryClient } from "@tanstack/react-query";
 
-// atomFamilies/selectorFamilies
 export const Blog = () => {
     const { id } = useParams();
     const { data, isLoading, error } = useBlog(id || "");
-    const queryClient = useQueryClient();
 
     if (isLoading) {
         return <div>

@@ -2,15 +2,10 @@ import { useBlogs } from "../hooks"
 import { Appbar } from "../components/AppBar"
 import { BlogCard } from "../components/BlogCard"
 import { BlogSkeleton } from "../components/BlogSkeleton"
-import { Link, Navigate } from "react-router-dom"
 import { useState } from "react"
 import axios from "axios"
 import { BACKEND_URL } from "../config"
 import { toast } from 'react-hot-toast'
-
-interface BlogError {
-    message: string;
-}
 
 export const Blogs = () => {
     const token = localStorage.getItem("token");

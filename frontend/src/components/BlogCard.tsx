@@ -5,9 +5,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { BACKEND_URL } from "../config";
 
-interface BlogCardProps {
+export interface BlogCardProps {
     blog: Blog;
+    key: string;
     currentUserId: string | null;
+    isAdmin: boolean;
 }
 
 export const Avatar = ({ name, size = "small" }: { name: string, size?: "small" | "big" }) => {

@@ -1,0 +1,20 @@
+{
+  "name": "@vatscode/medium-common",
+  "version": "1.0.3",
+  "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "typescript": "^5.3.3",
+    "zod": "^3.22.4"
+  }
+}
