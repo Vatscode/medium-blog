@@ -24,6 +24,5 @@ exports.updateBlogInput = zod_1.default.object({
     id: zod_1.default.string()
 });
 exports.publishBlogInput = zod_1.default.object({
-    id: zod_1.default.string(),
-    published: zod_1.default.boolean()
+    id: zod_1.default.string()
 });

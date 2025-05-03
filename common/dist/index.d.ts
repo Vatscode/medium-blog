@@ -51,12 +51,9 @@ export declare const updateBlogInput: z.ZodObject<{
 export type UpdateBlogInput = z.infer<typeof updateBlogInput>;
 export declare const publishBlogInput: z.ZodObject<{
     id: z.ZodString;
-    published: z.ZodBoolean;
 }, "strip", z.ZodTypeAny, {
     id: string;
-    published: boolean;
 }, {
     id: string;
-    published: boolean;
 }>;
 export type PublishBlogInput = z.infer<typeof publishBlogInput>;

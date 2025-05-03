@@ -1,7 +1,8 @@
 {
-  "name": "@vatscode/medium-common",
+  "name": "@vatscode/writehub-common",
   "version": "1.0.3",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],

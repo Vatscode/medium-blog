@@ -1,4 +1,4 @@
-import { createBlogInput, updateBlogInput, publishBlogInput } from "@vatscode/medium-common";
+import { createBlogInput, updateBlogInput, publishBlogInput } from "@vatscode/writehub-common";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { Hono } from "hono";
