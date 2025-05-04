@@ -10,6 +10,6 @@ command = "npm run build"
 # Format: prisma://<host>/?api_key=<jwt>
 # JWT contains: header.payload.signature
 [vars]
-DATABASE_URL = "prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiYzU0MzA3NzMtM2Q5Yy00YzYxLTgwMjEtNjMxMDVhM2ZjZGQwIiwidGVuYW50X2lkIjoiNjdjMjZjOGUyM2NlYzc3YTIyMDg3YzQ4ZWRmYzNmZWM1MWFjNzQ1MmEwZDg2Nzc3N2QwNWQ1NDU5NTM4YzNkNiIsImludGVybmFsX3NlY3JldCI6IjYwZWM4MWE1LWZhZTktNDU2Zi1iZDUwLTRlN2NhNzJiNjk0MiJ9.iMQq_--NDNreC7X4aw0o8_xVNAT3ATmj9o-djOBdYA8"
+DATABASE_URL = "prisma://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiYzU0MzA3NzMtM2Q5Yy00YzYxLTgwMjEtNjMxMDVhM2ZjZGQwIiwidGVuYW50X2lkIjoiNjdjMjZjOGUyM2NlYzc3YTIyMDg3YzQ4ZWRmYzNmZWM1MWFjNzQ1MmEwZDg2Nzc3N2QwNWQ1NDU5NTM4YzNkNiIsImludGVybmFsX3NlY3JldCI6IjYwZWM4MWE1LWZhZTktNDU2Zi1iZDUwLTRlN2NhNzJiNjk0MiJ9.iMQq_--NDNreC7X4aw0o8_xVNAT3ATmj9o-djOBdYA8"
 DIRECT_URL = "postgresql://medium_owner:npg_Tk39AlWVnyNH@ep-dawn-voice-a44aksm7-pooler.us-east-1.aws.neon.tech/medium?sslmode=require"
 JWT_SECRET = "K8Hj9Y$mP2#nX5v@qR4tL7wC1zA3eB6dM0fG8sW"

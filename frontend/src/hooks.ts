@@ -1,15 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 
-export interface Blog {
+export type Blog = {
     id: string;
     title: string;
     content: string;
     published: boolean;
     authorId: string;
     createdAt: string;
+    likeCount: number;
+    hasLiked: boolean;
     user: {
         id: string;
-        name: string;
+        name: string | null;
     };
 }
 

@@ -14,15 +14,30 @@ model Post {
   content   String
   published Boolean  @default(false)
   authorId  String
-  createdAt DateTime @default(now())
   user      User     @relation(fields: [authorId], references: [id])
+  likes     Like[]
+  likeCount Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 model User {
-  id       String  @id
-  email    String  @unique
-  name     String?
-  password String
-  isAdmin  Boolean @default(false)
-  posts    Post[]
+  id        String   @id
+  email     String   @unique
+  password  String
+  name      String?
+  isAdmin   Boolean  @default(false)
+  posts     Post[]
+  likes     Like[]
+  createdAt DateTime @default(now())
+}
+
+model Like {
+  id        String   @id
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
 }

@@ -10,11 +10,16 @@
     "build": "tsc",
     "prepublishOnly": "npm run build"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "writehub",
+    "common",
+    "types",
+    "shared"
+  ],
+  "author": "vatscode",
   "license": "ISC",
-  "description": "",
-  "dependencies": {
+  "description": "Shared types and utilities for WriteHub application",
+  "devDependencies": {
     "typescript": "^5.8.3"
   }
 }
