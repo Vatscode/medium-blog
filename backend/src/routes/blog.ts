@@ -309,7 +309,7 @@ const authMiddleware = async (c: any, next: any) => {
         }
         
         c.set("userId", userId);
-        console.log('Successfully set userId in context');
+        console.log('Successfully set userId in context:', userId);
         console.log('=== Auth Middleware End ===');
         await next();
     } catch(e) {
@@ -546,95 +546,95 @@ blogRouter.post('/like/:id', async (c) => {
     
     console.log('Like request:', { blogId, userId });
 
+    if (!userId) {
+        console.error('No userId found in context');
+        c.status(401);
+        return c.json({ message: "Unauthorized - No user ID found" });
+    }
+
     const prisma = new PrismaClient({
         datasourceUrl: c.env.DATABASE_URL,
     }).$extends(withAccelerate());
 
     try {
-        const result = await prisma.$transaction(async (tx) => {
-            // First check if the post exists and hasn't been liked
-            const post = await tx.post.findUnique({
-                where: { id: blogId },
-                include: {
-                    // @ts-ignore
-                    likes: {
-                        where: {
-                            userId
-                        }
+        // First check if the post exists
+        const post = await prisma.post.findUnique({
+            where: { id: blogId }
+        });
+
+        if (!post) {
+            c.status(404);
+            return c.json({ message: "Post not found" });
+        }
+
+        // Check if the user exists
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            c.status(404);
+            return c.json({ message: "User not found" });
+        }
+
+        // Check if the user has already liked the post
+        const existingLike = await prisma.like.findUnique({
+            where: {
+                userId_postId: {
+                    userId: userId,
+                    postId: blogId
+                }
+            }
+        });
+
+        let likeCount = post.likeCount;
+        let hasLiked = false;
+
+        if (existingLike) {
+            // Unlike the post
+            await prisma.like.delete({
+                where: {
+                    userId_postId: {
+                        userId: userId,
+                        postId: blogId
                     }
                 }
             });
-
-            console.log('Found post:', post);
-
-            if (!post) {
-                throw new Error("Post not found");
-            }
-
-            // @ts-ignore
-            if (post.likes.length > 0) {
-                throw new Error("Already liked this post");
-            }
-
-            console.log('Creating like with:', { userId, blogId });
-
-            // Create the like
-            // @ts-ignore
-            await tx.like.create({
+            likeCount--;
+        } else {
+            // Like the post
+            await prisma.like.create({
                 data: {
                     id: crypto.randomUUID(),
-                    user: {
-                        connect: {
-                            id: userId
-                        }
-                    },
-                    post: {
-                        connect: {
-                            id: blogId
-                        }
-                    }
+                    userId: userId,
+                    postId: blogId
                 }
             });
+            likeCount++;
+            hasLiked = true;
+        }
 
-            // Update the post's like count
-            const updatedPost = await tx.post.update({
-                where: { id: blogId },
-                data: {
-                    // @ts-ignore
-                    likeCount: {
-                        increment: 1
-                    }
-                },
-                select: {
-                    id: true,
-                    // @ts-ignore
-                    likeCount: true
-                }
-            });
-
-            return updatedPost;
+        // Update the post's like count
+        await prisma.post.update({
+            where: { id: blogId },
+            data: {
+                likeCount
+            }
         });
 
         return c.json({
-            message: "Post liked successfully",
-            // @ts-ignore
-            likeCount: result.likeCount
+            message: hasLiked ? "Post liked successfully" : "Post unliked successfully",
+            likeCount,
+            hasLiked
         });
     } catch (e) {
         console.error("Error liking post:", e);
-        if (e instanceof Error) {
-            if (e.message === "Already liked this post") {
-                c.status(400);
-            } else if (e.message === "Post not found") {
-                c.status(404);
-            } else {
-                c.status(500);
-            }
-            return c.json({ message: e.message });
-        }
         c.status(500);
         return c.json({
-            message: "Error while liking post"
+            message: "Error while liking post",
+            error: e instanceof Error ? e.message : "Unknown error"
         });
+    } finally {
+        await prisma.$disconnect();
     }
 });

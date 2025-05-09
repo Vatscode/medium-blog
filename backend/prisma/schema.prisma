@@ -21,14 +21,16 @@ model Post {
 }
 
 model User {
-  id        String   @id
-  email     String   @unique
-  password  String
-  name      String?
-  isAdmin   Boolean  @default(false)
-  posts     Post[]
-  likes     Like[]
-  createdAt DateTime @default(now())
+  id           String   @id
+  email        String   @unique
+  password     String
+  name         String?
+  bio          String?
+  profileImage String?
+  isAdmin      Boolean  @default(false)
+  posts        Post[]
+  likes        Like[]
+  createdAt    DateTime @default(now())
 }
 
 model Like {
