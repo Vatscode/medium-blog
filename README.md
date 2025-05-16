@@ -1,6 +1,6 @@
 # WriteHub - Modern Blogging Platform
 
-A full-stack blogging platform built with React, Hono.js, and Cloudflare Workers. WriteHub provides a seamless writing experience with a modern UI and robust backend architecture.
+A full-stack blogging platform built with React, Hono.js, and Cloudflare Workers.
 🔗 **Live Demo**: [writehub-jtvx.vercel.app](https://writehub-jtvx.vercel.app)
 
 ## 🚀 Features
@@ -13,7 +13,6 @@ A full-stack blogging platform built with React, Hono.js, and Cloudflare Workers
 - **Blog Management**
   - Create and publish blog posts
   - View all blogs in a clean interface
-  - Individual blog post views
   - User profiles
 
 - **Modern Tech Stack**
@@ -21,7 +20,7 @@ A full-stack blogging platform built with React, Hono.js, and Cloudflare Workers
   - Vite for lightning-fast development
   - Tailwind CSS for modern styling
   - React Query for efficient data fetching
-  - Toast notifications for better UX
+
 
 ## 🛠️ Technology Stack
 
@@ -29,10 +28,7 @@ A full-stack blogging platform built with React, Hono.js, and Cloudflare Workers
 - React
 - TypeScript
 - Vite
-- React Router
-- TanStack Query (React Query)
 - Tailwind CSS
-- React Hot Toast
 
 ### Backend
 - Hono.js
@@ -40,28 +36,6 @@ A full-stack blogging platform built with React, Hono.js, and Cloudflare Workers
 - Prisma ORM
 - TypeScript
 - JWT Authentication
-
-## 📦 Project Structure
-
-```
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── hooks/
-│   │   ├── utils/
-│   │   └── assets/
-│   ├── public/
-│   └── package.json
-│
-├── backend/
-│   ├── src/
-│   │   ├── routes/
-│   │   ├── middleware/
-│   │   └── index.ts
-│   ├── prisma/
-│   └── package.json
-```
 
 ## 🚀 Getting Started
 
@@ -133,11 +107,3 @@ The backend is designed to run on Cloudflare Workers:
    ```bash
    wrangler deploy
    ```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details. 
